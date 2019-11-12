@@ -1,6 +1,23 @@
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.gradle.api.tasks.testing.logging.TestLogEvent
+
 plugins {
     kotlin("jvm")
     jacoco
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform {
+        includeEngines("spek2")
+        testLogging {
+            events = setOf(TestLogEvent.PASSED, TestLogEvent.FAILED, TestLogEvent.SKIPPED)
+            exceptionFormat = TestExceptionFormat.FULL
+            debug {
+                events = TestLogEvent.values().toSet()
+                exceptionFormat = TestExceptionFormat.FULL
+            }
+        }
+    }
 }
 
 jacoco {

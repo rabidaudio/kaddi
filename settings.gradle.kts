@@ -1,2 +1,6 @@
-include(":kadi", "kadi-compiled", ":kadi-dsl")
 rootProject.name = "Kadi"
+
+include(":kadi")
+include("kadi-compiled")
+include(":kadi-dsl")
+include(":testutils")
