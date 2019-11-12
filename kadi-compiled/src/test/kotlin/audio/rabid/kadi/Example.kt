@@ -12,11 +12,7 @@ object Example {
         override fun get(): Logger = Logger()
     }
 
-    val LoggingModule = module("Logging") {
-        bind<Logger>().with(LoggerProvider())
-    }
-
-    object LoggingModule2 : Module("Logging", allowOverrides = false) {
+    class LoggingModule : Module("Logging", allowOverrides = false) {
         init {
             addBinding(Binding(BindingKey(Logger::class), false, LoggerProvider()))
         }
@@ -32,35 +28,23 @@ object Example {
         }
     }
 
-    val DataModule = module("Data") {
-        require(LoggingModule)
-        bind<IDatabase>().withSingleton { Database() }
-    }
-
-    object DataModule2 :  Module("Data", allowOverrides = false) {
+    class DataModule :  Module("Data", allowOverrides = false) {
         init {
-            require(LoggingModule2)
+            require(LoggingModule())
             addBinding(Binding(BindingKey(IDatabase::class), false, SingletonProvider<IDatabase>(LambdaProvider2 { Database() })))
         }
     }
 
     class Application {
         fun onApplicationCreate() {
-//            Kadi.createChildScope(this, AppModule)
-            Kadi.createChildScope(this, AppModule2())
+            Kadi.createChildScope(this, AppModule())
         }
     }
 
-    val AppModule = module("App") {
-        require(LoggingModule)
-        require(DataModule)
-        bind<String>("AppName").toInstance("MyApp")
-    }
-
-    class AppModule2 : Module("App", allowOverrides = false) {
+    class AppModule : Module("App", allowOverrides = false) {
         init {
-            require(LoggingModule2)
-            require(DataModule2)
+            require(LoggingModule())
+            require(DataModule())
             addBinding(Binding(BindingKey(String::class, "AppName"), false, JustProvider("MyApp")))
         }
     }
@@ -71,9 +55,8 @@ object Example {
 
         fun onCreate() {
             Kadi.getScope(application)
-//                .createChildScope(this, Activity1Module)
                 .createChildScope(this, Activity1Module2())
-                .inject(this)
+                    .inject(this)
             logger.log("foo")
         }
 
@@ -84,19 +67,9 @@ object Example {
 
     class Activity1ViewModel(val database: IDatabase, val appName: String)
 
-    val Activity1Module = module("Activity1") {
-
-        bind<Activity1ViewModel>().withSingleton {
-            Activity1ViewModel(
-                database = get(),
-                appName = get("AppName")
-            )
-        }
-    }
-
-    class Activity1Module2 :  Module("Activity1", allowOverrides = false) {
+    class Activity1Module2:  Module("Activity1", allowOverrides = false) {
         init {
-            require(AppModule2())
+            require(AppModule())
             addBinding(Binding(BindingKey(Activity1ViewModel::class), false, SingletonProvider<Activity1ViewModel>(LambdaProvider2(this::viewModel))))
         }
 
@@ -114,9 +87,8 @@ object Example {
 
         fun onAttach(activity: Any) {
             Kadi.getScope(activity)
-//                .createChildScope(this, FragmentModule)
-                .createChildScope(this, FragmentModule2())
-                .inject(this)
+                .createChildScope(this, FragmentModule())
+                    .inject(this)
         }
 
         fun onDetach() {
@@ -126,16 +98,9 @@ object Example {
 
     class FragmentViewModel(val logger: Logger)
 
-    val FragmentModule = module("Fragment") {
-
-        bind<FragmentViewModel>().withSingleton {
-            FragmentViewModel(logger = get())
-        }
-    }
-
-    class FragmentModule2 :  Module("Fragment", allowOverrides = false) {
+    class FragmentModule :  Module("Fragment", allowOverrides = false) {
         init {
-            require(AppModule2())
+            require(AppModule())
             require(Activity1Module2())
             addBinding(Binding(BindingKey(FragmentViewModel::class), false, SingletonProvider<FragmentViewModel>(LambdaProvider2(this::viewModel))))
         }
@@ -151,19 +116,9 @@ object Example {
 
     class Activity2ViewModel(val logger: Logger, val database: IDatabase)
 
-    val Activity2Module = module("Activity2") {
-
-        bind<Activity2ViewModel>().withSingleton {
-            Activity2ViewModel(
-                logger = get(),
-                database = get()
-            )
-        }
-    }
-
-    class Activity2Module2 :  Module("Activity2", allowOverrides = false) {
+    class Activity2Module :  Module("Activity2", allowOverrides = false) {
         init {
-            require(AppModule2())
+            require(AppModule())
             addBinding(Binding(BindingKey(Activity2ViewModel::class), false, SingletonProvider<Activity2ViewModel>(LambdaProvider2(this::viewModel))))
         }
 
@@ -181,9 +136,8 @@ object Example {
 
         fun onCreate() {
             Kadi.getScope(application)
-//                .createChildScope(this, Activity2Module)
-                .createChildScope(this, Activity2Module2())
-                .inject(this)
+                .createChildScope(this, Activity2Module())
+                    .inject(this)
         }
 
         fun onDestroy() {

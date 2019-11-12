@@ -4,7 +4,6 @@ import audio.rabid.kadi.Example.Activity1
 import audio.rabid.kadi.Example.Activity1ViewModel
 import audio.rabid.kadi.Example.Activity2
 import audio.rabid.kadi.Example.Activity2ViewModel
-import audio.rabid.kadi.Example.AppModule
 import audio.rabid.kadi.Example.Application
 import audio.rabid.kadi.Example.Database
 import audio.rabid.kadi.Example.Fragment
@@ -23,11 +22,10 @@ class IntegrationSpec : Spek({
 
     describe("Everything in root scope") {
         Kadi.addRootModules(
-//            AppModule,
-            Example.AppModule2(),
-            module("Inline") {
-                bind<Int>(0).toInstance(0)
-            }
+                Example.AppModule(),
+                module("Inline") {
+                    bind<Int>(0).toInstance(0)
+                }
         )
         expect(Kadi.get<Int>(0)).to.equal(0)
         val logger1 = Kadi.get<Logger>()

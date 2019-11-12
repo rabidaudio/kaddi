@@ -49,8 +49,8 @@ object Kadi : Scope {
         }
     }
 
-
-    internal fun reset() {
+    // TODO should this be a public feature if we want to expose the Root Scope?
+    fun reset() {
         rootScope.close()
         rootScope = ScopeImpl(Kadi, null)
     }
