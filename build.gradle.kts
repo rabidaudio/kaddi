@@ -33,6 +33,7 @@ subprojects {
 
     dependencies {
         "implementation"(kotlin("stdlib-jdk8"))
+        "compileOnly"("org.jetbrains:annotations:18.0.0")
 
         "testImplementation"("org.spekframework.spek2:spek-dsl-jvm:2.0.8")
         "testImplementation"("org.spekframework.spek2:spek-runner-junit5:2.0.8")

@@ -1,11 +1,11 @@
 package audio.rabid.kadi
 
-internal class ScopeImpl internal constructor(
+internal class ScopeImpl(
     private val key: Any,
     private val parentScope: ScopeImpl?
-) : ChildScope {
+) : Scope {
     // the modules that were added in this scope (they were not already added in a parent scope)
-    private val modules = mutableListOf<Module>()
+    private val modules = mutableListOf<KadiModule>()
     // the bindings from the modules of this scope
     private val bindings = mutableMapOf<BindingKey<*>, Binding<*>>()
 
@@ -51,7 +51,7 @@ internal class ScopeImpl internal constructor(
         }
     }
 
-    internal fun addModule(module: Module) {
+    internal fun addModule(module: KadiModule) {
         synchronized(Kadi) {
             if (moduleAlreadyAvailable(module)) return
             for (binding in module.getBindings()) {
@@ -61,16 +61,18 @@ internal class ScopeImpl internal constructor(
             for (importedModule in module.getImportedModules()) {
                 addModule(importedModule)
             }
-            modules.add(module)
+            modules.add(module).also {
+                module.onAttachedToScope(this)
+            }
         }
     }
 
-    override fun createChildScope(identifier: Any, vararg modules: Module): ChildScope {
+    override fun createChildScope(identifier: Any, vararg modules: Module): Scope {
         synchronized(Kadi) {
             check(!Kadi.scopes.contains(identifier)) { "Scope for key $identifier already exists" }
             return ScopeImpl(identifier, this).apply {
                 for (module in modules) {
-                    addModule(module)
+                    addModule(module as KadiModule)
                 }
             }.also { Kadi.scopes[identifier] = it }
         }

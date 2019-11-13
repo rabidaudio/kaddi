@@ -1,5 +1,7 @@
 package audio.rabid.kadi
 
+import audio.rabid.kadi.dsl.*
+
 object Example {
 
     class Logger {
@@ -33,7 +35,7 @@ object Example {
 
     class Application {
         fun onApplicationCreate() {
-            Kadi.createChildScope(this, AppModule)
+            Kadi.createScope(this, AppModule)
         }
     }
 

@@ -1,73 +1,62 @@
-//package audio.rabid.kadi.dsl
-//
-//import androidx.annotation.CheckResult
-//import audio.rabid.kadi.*
-//
-//
-//class BindingBlock internal constructor(internal val module: Module) {
-//
-//    fun require(otherModule: Module) {
-//        module.require(otherModule)
-//    }
-//
-//    @CheckResult
-//    inline fun <reified T: Any> bind(
-//        identifier: Any = Unit,
-//        overrides: Boolean = false
-//    ): PartialBindingBlock<T> =
-//        PartialBindingBlock(this, BindingKey(T::class, identifier), overrides)
-//}
-//
-//// TODO These could be better implemented with interfaces and a single class
-//
-//class PartialBindingBlock<T: Any>(
-//    private val bindingBlock: BindingBlock,
-//    private val bindingKey: BindingKey<T>,
-//    private val overrides: Boolean
-//) {
-//
-//    fun with(provider: Provider<T>) {
-//        bindingBlock.module.addBinding(Binding(bindingKey, overrides, provider))
-//    }
-//
-//    fun providerBlock(): ProviderBlock = ProviderBlock(bindingBlock.module)
-//
-//    inline fun toInstance(value: T) {
-//        with(JustProvider(value))
-//    }
-//
-//    inline fun with(noinline block: ProviderBlock.() -> T) {
-//        with(LambdaProvider(providerBlock(), block))
-//    }
-//
-//    inline fun withSingleton(provider: Provider<T>) {
-//        with(SingletonProvider(provider))
-//    }
-//
-//    inline fun withSingleton(noinline block: ProviderBlock.() -> T) {
-//        with(SingletonProvider(LambdaProvider(providerBlock(), block)))
-//    }
-//}
-//
-//class ProviderBlock(private val module: Module) {
-//    fun <T: Any> get(bindingKey: BindingKey<T>): T {
-//        return Kadi.getScopeForModule(module).get(bindingKey)
-//    }
-//
-//    inline fun <reified T: Any> get(identifier: Any = Unit): T =
-//        get(BindingKey(T::class, identifier))
-//}
-//
-//fun module(name: String, allowOverrides: Boolean = false, block: BindingBlock.() -> Unit): Module {
-//    val module = Module(name, allowOverrides)
-//    val bindingBlock = BindingBlock(module)
-//    block.invoke(bindingBlock)
-//    return module
-//}
-//
-//class LambdaProvider<T: Any>(
-//        private val providerBlock: ProviderBlock,
-//        private val lambda: ProviderBlock.() -> T
-//): Provider<T> {
-//    override fun get(): T = lambda.invoke(providerBlock)
-//}
+package audio.rabid.kadi.dsl
+
+import audio.rabid.kadi.*
+
+interface BindingBlock {
+    companion object {
+        // this companion object trick is a way to still supply a public method that does the work without cluttering
+        // the methods of the interface, leaving only the inline versions of the methods suggested by the IDE
+        fun <T: Any> bind(block: BindingBlock, bindingKey: BindingKey<T>, overrides: Boolean): PartialBindingBlock<T> =
+                BindingBuilder(bindingKey, overrides, block as DSLModule)
+    }
+
+    fun require(otherModule: Module)
+}
+
+inline fun <reified T: Any> BindingBlock.bind(
+        identifier: Any = Unit,
+        overrides: Boolean = false
+): PartialBindingBlock<T> = BindingBlock.bind(this, BindingKey(T::class, identifier), overrides)
+
+interface PartialBindingBlock<T: Any> {
+    companion object {
+        fun <T: Any> createProvider(block: PartialBindingBlock<T>, lambda: ProviderBlock.() -> T): Provider<T> =
+                LambdaProvider((block as BindingBuilder).module, lambda)
+    }
+
+    fun with(provider: Provider<T>)
+}
+
+@Suppress("NOTHING_TO_INLINE")
+inline fun <T: Any> PartialBindingBlock<T>.toInstance(value: T) {
+    with(JustProvider(value))
+}
+
+@Suppress("NOTHING_TO_INLINE")
+inline fun <T: Any> PartialBindingBlock<T>.with(noinline block: ProviderBlock.() -> T) {
+    with(PartialBindingBlock.createProvider(this, block))
+}
+
+@Suppress("NOTHING_TO_INLINE")
+inline fun <T: Any> PartialBindingBlock<T>.withSingleton(provider: Provider<T>) {
+    with(SingletonProvider(provider))
+}
+
+@Suppress("NOTHING_TO_INLINE")
+inline fun <T: Any> PartialBindingBlock<T>.withSingleton(noinline block: ProviderBlock.() -> T) {
+    with(SingletonProvider(PartialBindingBlock.createProvider(this, block)))
+}
+
+interface ProviderBlock {
+    companion object {
+        fun <T: Any> get(block: ProviderBlock, bindingKey: BindingKey<T>): T =
+                (block as DSLModule).boundScope.get(bindingKey)
+    }
+}
+
+inline fun <reified T: Any> ProviderBlock.get(identifier: Any = Unit): T =
+        ProviderBlock.get(this, BindingKey(T::class, identifier))
+
+fun module(name: String, allowOverrides: Boolean = false, block: BindingBlock.() -> Unit): Module {
+    return DSLModule(name, allowOverrides).also(block)
+}
