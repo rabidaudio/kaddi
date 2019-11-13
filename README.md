@@ -6,7 +6,7 @@ can focus on playing (coding).
 
 audio.rabid.kadi.BindingKey - type and optional identifier that is used to find a dependency 
 audio.rabid.kadi.Binding - link from a type to a dependency
-audio.rabid.kadi.Module - a collection of bindings. You can either define all your bindings in a single audio.rabid.kadi.module, or
+audio.rabid.kadi.Module - a collection of bindings. You can either define all your bindings in a single module, or
     group related bindings together into a package
 audio.rabid.kadi.Scope -
 
@@ -17,7 +17,7 @@ audio.rabid.kadi.Scope -
 - there are no nullable bindings. that's a bit of a smell, but if you must, wrap in Optional
 - generic class keys are not supported, generics are erased. If you have a need for a generic type
     binding, make an interface to use, e.g. interface IntFoo : Foo<Int>
-- singleton bindings will always be scoped to the highest scope that added the audio.rabid.kadi.module. that avoids
+- singleton bindings will always be scoped to the highest scope that added the module. that avoids
     weirdness around what scope a binding ends up living in based on who calls it first
 - scope identifiers must be unique. there could be two sibling versions of the "same scope"
     (the same parent tree and the same modules) as long as they have different identifiers
