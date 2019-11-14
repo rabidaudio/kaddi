@@ -37,3 +37,4 @@ TODO
 - [ ] async dependencies?
 - [ ] eager dependencies?
 - [ ] onReady? (when do these fire - on a new scope?)
+- [ ] Rename to Kaddi with 2 d's

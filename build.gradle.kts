@@ -41,9 +41,6 @@ subprojects {
         "testRuntimeOnly"("org.junit.jupiter:junit-jupiter-engine:5.4.1")
 
         "testImplementation"("com.winterbe:expekt:0.5.0")
-        if (name != "testutils") {
-            "testImplementation"(project(":testutils"))
-        }
     }
 
     tasks.withType<KotlinCompile> {
