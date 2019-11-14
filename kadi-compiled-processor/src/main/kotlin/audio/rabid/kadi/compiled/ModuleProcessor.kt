@@ -11,10 +11,6 @@ import javax.lang.model.element.ElementKind
 import javax.lang.model.element.TypeElement
 import javax.tools.Diagnostic
 
-//@AutoService(Processor::class)
-
-//https://willowtreeapps.com/ideas/generating-code-via-annotations-in-kotlin
-
 class ModuleProcessor : AbstractProcessor() {
 
     companion object {

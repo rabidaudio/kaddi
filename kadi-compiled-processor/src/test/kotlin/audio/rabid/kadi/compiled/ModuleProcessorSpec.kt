@@ -1,5 +1,6 @@
 package audio.rabid.kadi.compiled
 
+import audio.rabid.kadi.compiled.ModuleProcessor.Companion.GENERATED_SOURCES_DIR_KEY
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.KotlinCompilation.*
 import com.tschuchort.compiletesting.SourceFile
@@ -19,7 +20,7 @@ class ModuleProcessorSpec : Spek({
     }
 
     afterEachTest {
-//        temporaryFolder.deleteRecursively()
+        temporaryFolder.deleteRecursively()
     }
 
     describe("ModuleProcessor") {
@@ -67,5 +68,6 @@ private fun compile(vararg sourceFiles: SourceFile): Result {
                 inheritClassPath = true
                 sources = sourceFiles.toList()
                 verbose = false
+                kaptArgs[GENERATED_SOURCES_DIR_KEY] = temporaryFolder.absolutePath
             }.compile()
 }
