@@ -1,20 +1,29 @@
 package audio.rabid.kadi
 
 internal class ScopeImpl(
-    private val key: Any,
-    private val parentScope: ScopeImpl?
+        private val key: Any,
+        private val parentScope: ScopeImpl?
 ) : Scope {
     // the modules that were added in this scope (they were not already added in a parent scope)
     private val modules = mutableListOf<KadiModule>()
-    // the bindings from the modules of this scope
-    private val bindings = mutableMapOf<BindingKey<*>, Binding<*>>()
+    private val singletons = mutableMapOf<BindingKey<*>, Any>()
 
     // TODO this lookup could be cached
-    private fun <T: Any> findBinding(bindingKey: BindingKey<T>): Binding<T>? {
+    private fun <T : Any> findBinding(bindingKey: BindingKey<T>): Binding<T>? {
         synchronized(Kadi) {
-            val binding = bindings[bindingKey] ?: return parentScope?.findBinding(bindingKey)
-            @Suppress("UNCHECKED_CAST")
-            return binding as Binding<T>
+            return findLocalBinding(bindingKey) ?: parentScope?.findBinding(bindingKey)
+        }
+    }
+
+    private fun <T : Any> findLocalBinding(bindingKey: BindingKey<T>): Binding<T>? {
+        synchronized(Kadi) {
+            for (module in modules) {
+                for (binding in module.getBindings()) {
+                    @Suppress("UNCHECKED_CAST")
+                    if (binding.key == bindingKey) return binding as Binding<T>
+                }
+            }
+            return null
         }
     }
 
@@ -40,10 +49,6 @@ internal class ScopeImpl(
         }
     }
 
-    // TODO if you construct multiple copies of the same module we're going to have a problem...
-    //  this could be solved by annotation-processed modules
-    fun containsModule(module: Module): Boolean = modules.contains(module)
-
     private fun moduleAlreadyAvailable(module: Module): Boolean {
         synchronized(Kadi) {
             return modules.any { it.name == module.name }
@@ -53,16 +58,16 @@ internal class ScopeImpl(
 
     internal fun addModule(module: KadiModule) {
         synchronized(Kadi) {
-            if (moduleAlreadyAvailable(module)) return
-            for (binding in module.getBindings()) {
-                verifyBinding(binding, module.allowOverrides)
-                bindings[binding.key] = binding.copy()
+            val moduleToAdd = module.copy()
+            if (moduleAlreadyAvailable(moduleToAdd)) return
+            for (binding in moduleToAdd.getBindings()) {
+                verifyBinding(binding, moduleToAdd.allowOverrides)
             }
-            for (importedModule in module.getImportedModules()) {
+            for (importedModule in moduleToAdd.getImportedModules()) {
                 addModule(importedModule)
             }
-            modules.add(module).also {
-                module.onAttachedToScope(this)
+            modules.add(moduleToAdd).also {
+                moduleToAdd.onAttachedToScope(this)
             }
         }
     }
@@ -80,9 +85,20 @@ internal class ScopeImpl(
 
     override fun <T : Any> get(key: BindingKey<T>): T {
         synchronized(Kadi) {
-            val binding = findBinding(key)
-                ?: throw IllegalStateException("$key not found in $this")
-            return binding.provider.get()
+            return getFromLocalBinding(key)
+                    ?: parentScope?.get(key)
+                    ?: throw IllegalStateException("$key not found in $this")
+        }
+    }
+
+    // TODO need to deal with overrides. the code will get even more complicated so a redesign is probably in order
+    private fun <T : Any> getFromLocalBinding(key: BindingKey<T>): T? {
+        synchronized(Kadi) {
+            val binding = findLocalBinding(key) ?: return null
+            if (!binding.singleton) return binding.provider.get()
+            @Suppress("UNCHECKED_CAST")
+            singletons[binding.key]?.let { return it as T }
+            return binding.provider.get().also { singletons[binding.key] = it }
         }
     }
 
@@ -92,9 +108,11 @@ internal class ScopeImpl(
 
     override fun close() {
         synchronized(Kadi) {
-            for ((_,binding) in bindings) {
-                if (binding.provider is SingletonProvider) binding.provider.release()
+            for ((_, singleton) in singletons) {
+                if (singleton is ScopeClosable) singleton.onScopeClose()
             }
+            singletons.clear()
+            modules.clear()
             Kadi.scopes.remove(key)
         }
     }

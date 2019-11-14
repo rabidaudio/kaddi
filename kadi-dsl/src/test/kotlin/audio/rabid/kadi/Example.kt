@@ -19,7 +19,7 @@ object Example {
     }
 
     interface IDatabase
-    class Database: IDatabase, ScopeClosable {
+    class Database : IDatabase, ScopeClosable {
 
         var isClosed = false
 
@@ -51,8 +51,8 @@ object Example {
 
         fun onCreate() {
             Kadi.getScope(application)
-                .createChildScope(this, Activity1Module)
-                .inject(this)
+                    .createChildScope(this, Activity1Module)
+                    .inject(this)
             logger.log("foo")
         }
 
@@ -67,8 +67,8 @@ object Example {
 
         bind<Activity1ViewModel>().withSingleton {
             Activity1ViewModel(
-                database = get(),
-                appName = get("AppName")
+                    database = get(),
+                    appName = get("AppName")
             )
         }
     }
@@ -78,8 +78,8 @@ object Example {
 
         fun onAttach(activity: Any) {
             Kadi.getScope(activity)
-                .createChildScope(this, FragmentModule)
-                .inject(this)
+                    .createChildScope(this, FragmentModule)
+                    .inject(this)
         }
 
         fun onDetach() {
@@ -102,8 +102,8 @@ object Example {
 
         bind<Activity2ViewModel>().withSingleton {
             Activity2ViewModel(
-                logger = get(),
-                database = get()
+                    logger = get(),
+                    database = get()
             )
         }
     }
@@ -113,8 +113,8 @@ object Example {
 
         fun onCreate() {
             Kadi.getScope(application)
-                .createChildScope(this, Activity2Module)
-                .inject(this)
+                    .createChildScope(this, Activity2Module)
+                    .inject(this)
         }
 
         fun onDestroy() {

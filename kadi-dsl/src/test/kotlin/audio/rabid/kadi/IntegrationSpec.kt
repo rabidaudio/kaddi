@@ -26,10 +26,10 @@ class IntegrationSpec : Spek({
 
     describe("Everything in root scope") {
         Kadi.RootScope.addModules(
-            AppModule,
-            module("Inline") {
-                bind<Int>(0).toInstance(0)
-            }
+                AppModule,
+                module("Inline") {
+                    bind<Int>(0).toInstance(0)
+                }
         )
         expect(Kadi.RootScope.get<Int>(0)).to.equal(0)
         val logger1 = Kadi.RootScope.get<Logger>()
@@ -48,7 +48,7 @@ class IntegrationSpec : Spek({
         expect(Kadi.RootScope.get<Int>(0)).to.equal(0)
     }
 
-    describe("Dummy Application") {
+    describe("Dummy scoped Application") {
         val application by memoized { Application() }
         val activity1 by memoized { Activity1(application) }
         val fragment1 by memoized { Fragment() }
