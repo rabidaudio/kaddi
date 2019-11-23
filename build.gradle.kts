@@ -21,11 +21,14 @@ allprojects {
         jcenter()
         maven(url = "https://dl.bintray.com/kotlin/kotlin-eap")
     }
+    group = "audio.rabid.kaddi"
+    version = "0.0.1"
 }
 
 subprojects {
     apply(plugin = "kotlin")
     apply(plugin = "org.gradle.jacoco")
+    apply(plugin = "maven-publish")
 
     extensions.configure<JacocoPluginExtension>("jacoco") {
         toolVersion = "0.8.2"
