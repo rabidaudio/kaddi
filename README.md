@@ -1,14 +1,14 @@
 
-# audio.rabid.kadi.Kadi
+# Kaddi
 
 A caddy manages clubs (dependencies), giving the right one when it's needed, so the golfer (developer)
 can focus on playing (coding).
 
-audio.rabid.kadi.BindingKey - type and optional identifier that is used to find a dependency 
-audio.rabid.kadi.Binding - link from a type to a dependency
-audio.rabid.kadi.Module - a collection of bindings. You can either define all your bindings in a single module, or
+BindingKey - type and optional identifier that is used to find a dependency 
+Binding - link from a type to a dependency
+Module - a collection of bindings. You can either define all your bindings in a single module, or
     group related bindings together into a package
-audio.rabid.kadi.Scope -
+Scope -
 
 
 - deps are keyed by a class, and an optional object (e.g. a string, default unit)
@@ -26,15 +26,15 @@ audio.rabid.kadi.Scope -
 TODO
 
 - [x] overrides
-- [ ] set bindings
 - [x] dsl
-- [ ] constructor injection
-- [ ] cache binding lookups
-- [ ] scope annotations
 - [x] scope closable
+- [ ] set bindings
 - [ ] thread safety performance
-- [ ] scope-creation-time tree validation and scope validation?
 - [ ] async dependencies?
 - [ ] eager dependencies?
 - [ ] onReady? (when do these fire - on a new scope?)
-- [ ] Rename to Kaddi with 2 d's
+- compiled form
+  - [ ] constructor injection
+  - [ ] cache binding lookups
+  - [ ] scope annotations
+  - [ ] scope-creation-time tree validation and scope validation?

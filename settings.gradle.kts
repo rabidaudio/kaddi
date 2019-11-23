@@ -1,6 +1,6 @@
-rootProject.name = "Kadi"
+rootProject.name = "Kaddi"
 
-include(":kadi")
-include(":kadi-compiled")
-include(":kadi-compiled-processor")
-include(":kadi-dsl")
+include(":kaddi")
+include(":kaddi-compiled")
+include(":kaddi-compiled-processor")
+include(":kaddi-dsl")

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <bytecodeTargetLevel>
+      <module name="Kaddi.kaddi-compiled-processor.main" target="1.8" />
+      <module name="Kaddi.kaddi-compiled-processor.test" target="1.8" />
+      <module name="Kaddi.kaddi-compiled.main" target="1.8" />
+      <module name="Kaddi.kaddi-compiled.test" target="1.8" />
+      <module name="Kaddi.kaddi-dsl.main" target="1.8" />
+      <module name="Kaddi.kaddi-dsl.test" target="1.8" />
+      <module name="Kaddi.kaddi.main" target="1.8" />
+      <module name="Kaddi.kaddi.test" target="1.8" />
+    </bytecodeTargetLevel>
+  </component>
+</project>
