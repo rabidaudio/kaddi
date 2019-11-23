@@ -67,8 +67,8 @@ object Example {
 
         bind<Activity1ViewModel>().withSingleton {
             Activity1ViewModel(
-                    database = get(),
-                    appName = get("AppName")
+                    database = instance(),
+                    appName = instance("AppName")
             )
         }
     }
@@ -92,7 +92,7 @@ object Example {
     val FragmentModule = module("Fragment") {
 
         bind<FragmentViewModel>().withSingleton {
-            FragmentViewModel(logger = get())
+            FragmentViewModel(logger = instance())
         }
     }
 
@@ -102,8 +102,8 @@ object Example {
 
         bind<Activity2ViewModel>().withSingleton {
             Activity2ViewModel(
-                    logger = get(),
-                    database = get()
+                    logger = instance(),
+                    database = instance()
             )
         }
     }

@@ -2,7 +2,7 @@ package audio.rabid.kadi
 
 import kotlin.reflect.KClass
 
-data class BindingKey<T: Any>(val type: KClass<T>, val identifier: Any = Unit) {
+data class BindingKey<T: Any>(val type: KClass<T>, val qualifier: Any = Unit) {
 
     override fun toString(): String {
         return StringBuilder().apply {
@@ -10,9 +10,9 @@ data class BindingKey<T: Any>(val type: KClass<T>, val identifier: Any = Unit) {
             append('<')
             append(type.java.canonicalName)
             append('>')
-            if (identifier != Unit) {
+            if (qualifier != Unit) {
                 append('(')
-                append(identifier)
+                append(qualifier)
                 append(')')
             }
         }.toString()

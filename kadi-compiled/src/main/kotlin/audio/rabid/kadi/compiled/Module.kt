@@ -18,7 +18,6 @@ fun <T: Any> findGeneratedModule(moduleClass: KClass<T>): audio.rabid.kadi.Modul
 inline fun <reified T: Any> generatedModule(): audio.rabid.kadi.Module = findGeneratedModule(T::class)
 
 // example
-
 //@InjectConstructor
 //class Foo(@Named("foo") foo: String)
 //
@@ -37,7 +36,7 @@ inline fun <reified T: Any> generatedModule(): audio.rabid.kadi.Module = findGen
 //    }
 //}
 //
-//@Module1(importedModules = [OtherModule::class])
+//@Module(importedModules = [OtherModule::class])
 //interface MyModule {
 //
 //    // an interface method is a shortcut to defer to @InjectConstructor
@@ -49,7 +48,7 @@ inline fun <reified T: Any> generatedModule(): audio.rabid.kadi.Module = findGen
 //    }
 //}
 //
-//@Module1
+//@Module
 //interface OtherModule {
 //
 //    @Named("foo")
@@ -66,7 +65,6 @@ Tree:
         [] => String("foo")
     )
 */
-
 //
 //class GeneratedOtherModule : Module("OtherModule", allowOverrides = false), OtherModule {
 //
@@ -76,6 +74,16 @@ Tree:
 //    }
 //}
 //
+//interface MyModule {
+//
+//    // an interface method is a shortcut to defer to @InjectConstructor
+//    fun foo(): Foo
+//
+//    @Singleton
+//    fun complicatedThing(foo: Foo): IComplicatedThing {
+//        return ComplicatedThing.create(foo)
+//    }
+//}
 //class MyModuleImpl : Module("MyModule", allowOverrides = false), MyModule {
 //
 //    init {
@@ -92,3 +100,5 @@ Tree:
 //        return complicatedThing(foo = scope.get<Foo>())
 //    }
 //}
+//Kadi.getScope(application)
+//        .createChildScope(this, generatedModule<MyModule>())

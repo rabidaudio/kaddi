@@ -54,7 +54,7 @@ interface ProviderBlock {
     }
 }
 
-inline fun <reified T : Any> ProviderBlock.get(identifier: Any = Unit): T =
+inline fun <reified T : Any> ProviderBlock.instance(identifier: Any = Unit): T =
         ProviderBlock.get(this, BindingKey(T::class, identifier))
 
 fun module(name: String, allowOverrides: Boolean = false, block: BindingBlock.() -> Unit): Module {
