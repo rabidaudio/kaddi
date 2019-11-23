@@ -25,27 +25,30 @@ class IntegrationSpec : Spek({
     }
 
     describe("Everything in root scope") {
-        Kaddi.RootScope.addModules(
-                AppModule,
-                module("Inline") {
-                    bind<Int>(0).toInstance(0)
-                }
-        )
-        expect(Kaddi.RootScope.get<Int>(0)).to.equal(0)
-        val logger1 = Kaddi.RootScope.get<Logger>()
-        expect(logger1).to.be.an.instanceof(Logger::class.java)
-        val logger2 = Kaddi.RootScope.get<Logger>()
-        expect(logger2).to.be.an.instanceof(Logger::class.java)
-        expect(logger2).not.to.equal(logger1)
-        val database1 = Kaddi.RootScope.get<IDatabase>()
-        expect(database1).to.be.an.instanceof(Database::class.java)
-        val database2 = Kaddi.RootScope.get<IDatabase>()
-        expect(database2).to.be.an.instanceof(Database::class.java)
-        expect(database2).to.equal(database1)
 
-        Kaddi.RootScope.addModules(module("Inline2") { bind<String>("foo").toInstance("bar") })
-        expect(Kaddi.RootScope.get<String>("foo")).to.equal("bar")
-        expect(Kaddi.RootScope.get<Int>(0)).to.equal(0)
+        it("should allow modules to be added on the fly") {
+            Kaddi.RootScope.addModules(
+                    AppModule,
+                    module("Inline") {
+                        bind<Int>(0).toInstance(0)
+                    }
+            )
+            expect(Kaddi.RootScope.get<Int>(0)).to.equal(0)
+            val logger1 = Kaddi.RootScope.get<Logger>()
+            expect(logger1).to.be.an.instanceof(Logger::class.java)
+            val logger2 = Kaddi.RootScope.get<Logger>()
+            expect(logger2).to.be.an.instanceof(Logger::class.java)
+            expect(logger2).not.to.equal(logger1)
+            val database1 = Kaddi.RootScope.get<IDatabase>()
+            expect(database1).to.be.an.instanceof(Database::class.java)
+            val database2 = Kaddi.RootScope.get<IDatabase>()
+            expect(database2).to.be.an.instanceof(Database::class.java)
+            expect(database2).to.equal(database1)
+
+            Kaddi.RootScope.addModules(module("Inline2") { bind<String>("foo").toInstance("bar") })
+            expect(Kaddi.RootScope.get<String>("foo")).to.equal("bar")
+            expect(Kaddi.RootScope.get<Int>(0)).to.equal(0)
+        }
     }
 
     describe("Dummy scoped Application") {
