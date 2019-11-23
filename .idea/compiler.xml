@@ -10,6 +10,8 @@
       <module name="Kaddi.kaddi-dsl.test" target="1.8" />
       <module name="Kaddi.kaddi.main" target="1.8" />
       <module name="Kaddi.kaddi.test" target="1.8" />
+      <module name="Kaddi.main" target="1.8" />
+      <module name="Kaddi.test" target="1.8" />
     </bytecodeTargetLevel>
   </component>
 </project>
