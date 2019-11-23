@@ -1,8 +1,13 @@
-
 # Kaddi
 
-A caddy manages clubs (dependencies), giving the right one when it's needed, so the golfer (developer)
-can focus on playing (coding).
+A caddy manages clubs (dependencies), providing the right one at the right time, so the golfer (developer)
+can focus on golf (coding). Kaddi is another DI library for Kotlin. It could stand for
+[K]otlin [A]n[d]roid [D]ependency [I]njection, but it's usage is not limited to Android.
+
+**NOTE** This is a work in progress. The DSL form should be usable now, but the compiled form will need a little
+more work. As you can see below some planned features are still missing and the documentation is incomplete.
+
+---
 
 BindingKey - type and optional identifier that is used to find a dependency 
 Binding - link from a type to a dependency
@@ -23,7 +28,7 @@ Scope -
     (the same parent tree and the same modules) as long as they have different identifiers
 - bindings are copied from modules into the scope, so that singletons are unique to a scope, not a module
 
-TODO
+## TODO
 
 - [x] overrides
 - [x] dsl
@@ -33,7 +38,14 @@ TODO
 - [ ] async dependencies?
 - [ ] eager dependencies?
 - [ ] onReady? (when do these fire - on a new scope?)
-- compiled form
+- docs
+  - [ ] motivation
+  - [ ] comparison
+  - [ ] limitations
+  - [ ] concepts
+  - [ ] examples
+  - [ ] get started
+- compiled implementation
   - [ ] constructor injection
   - [ ] cache binding lookups
   - [ ] scope annotations
