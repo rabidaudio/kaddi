@@ -39,11 +39,12 @@ internal class DSLModule(
     override fun copy(): KaddiModule {
         return DSLModule(name).also { new ->
             new.importedModules.addAll(importedModules)
+            new.requiredBindings.addAll(requiredBindings)
             new.bindings.addAll(bindings.map { it.copyForNewModule(new) })
         }
     }
 
-    private fun <T: Any> Binding<T>.copyForNewModule(module: DSLModule): Binding<T> {
+    private fun <T : Any> Binding<T>.copyForNewModule(module: DSLModule): Binding<T> {
         return when (this) {
             is Binding.Basic -> {
                 val lambdaProvider = provider as? LambdaProvider<T> ?: return this

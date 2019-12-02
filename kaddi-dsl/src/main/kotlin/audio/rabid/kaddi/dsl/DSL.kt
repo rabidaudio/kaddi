@@ -1,20 +1,19 @@
 package audio.rabid.kaddi.dsl
 
 import audio.rabid.kaddi.*
-import audio.rabid.kaddi.dsl.BindingType.*
 
 interface BindingBlock {
     companion object {
         // this companion object trick is a way to still supply a public method that does the work without cluttering
         // the methods of the interface, leaving only the inline versions of the methods suggested by the IDE
-        fun <T : Any> bind(block: BindingBlock, bindingKey: BindingKey<T>, overrides: Boolean, type: BindingType): PartialBindingBlock<T> =
-                BindingBuilder(bindingKey, overrides, type, block as DSLModule)
+        fun <T : Any> bind(block: BindingBlock, bindingKey: BindingKey<T>, overrides: Boolean, intoSet: Boolean): PartialBindingBlock<T> =
+                BindingBuilder(bindingKey, overrides, intoSet, block as DSLModule)
 
-        fun <T: Any> createSetBinding(block: BindingBlock, key: BindingKey<T>) {
+        fun <T : Any> createSetBinding(block: BindingBlock, key: BindingKey<T>) {
             (block as DSLModule).addBinding(Binding.Set(key))
         }
 
-        fun <T: Any> require(block: BindingBlock, bindingKey: BindingKey<T>) {
+        fun <T : Any> require(block: BindingBlock, bindingKey: BindingKey<T>) {
             (block as DSLModule).addRequiredBinding(bindingKey)
         }
     }
@@ -25,17 +24,17 @@ interface BindingBlock {
 inline fun <reified T : Any> BindingBlock.bind(
         qualifier: Any = Unit,
         overrides: Boolean = false
-): PartialBindingBlock<T> = BindingBlock.bind(this, BindingKey(T::class, qualifier), overrides, BASIC)
+): PartialBindingBlock<T> = BindingBlock.bind(this, BindingKey(T::class, qualifier), overrides, intoSet = false)
 
-inline fun <reified T: Any> BindingBlock.declareSetBinding(
+inline fun <reified T : Any> BindingBlock.declareSetBinding(
         qualifier: Any = Unit
 ) {
     BindingBlock.createSetBinding(this, BindingKey(T::class, qualifier, set = true))
 }
 
-inline fun <reified T: Any> BindingBlock.bindIntoSet(
+inline fun <reified T : Any> BindingBlock.bindIntoSet(
         qualifier: Any = Unit
-) = BindingBlock.bind(this, BindingKey(T::class, qualifier, set = true), false, INTO_SET)
+) = BindingBlock.bind(this, BindingKey(T::class, qualifier, set = true), overrides = false, intoSet = true)
 
 inline fun <reified T : Any> BindingBlock.require(qualifier: Any = Unit) {
     BindingBlock.require(this, BindingKey(T::class, qualifier))

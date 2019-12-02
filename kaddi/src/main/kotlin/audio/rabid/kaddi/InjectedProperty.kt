@@ -3,15 +3,14 @@ package audio.rabid.kaddi
 import java.lang.ref.WeakReference
 import kotlin.reflect.KProperty
 
-class InjectedProperty<T: Any> private constructor(private val bindingKey: BindingKey<T>) {
+class InjectedProperty<T : Any> private constructor(private val bindingKey: BindingKey<T>) {
 
     companion object {
-        fun <T: Any> create(owner: Any, bindingKey: BindingKey<T>): InjectedProperty<T> {
+        fun <T : Any> create(owner: Any, bindingKey: BindingKey<T>): InjectedProperty<T> {
             return InjectedProperty(bindingKey).also { addInjectedDelegate(owner, it) }
         }
 
-        private val injectedDelegateListeners
-                = mutableListOf<Pair<WeakReference<Any>, InjectedProperty<*>>>()
+        private val injectedDelegateListeners = mutableListOf<Pair<WeakReference<Any>, InjectedProperty<*>>>()
 
         private fun addInjectedDelegate(owner: Any, property: InjectedProperty<*>) {
             synchronized(Kaddi) {
@@ -44,6 +43,6 @@ class InjectedProperty<T: Any> private constructor(private val bindingKey: Bindi
     }
 }
 
-inline fun <reified T: Any> Any.inject(identifier: Any = Unit): InjectedProperty<T> {
+inline fun <reified T : Any> Any.inject(identifier: Any = Unit): InjectedProperty<T> {
     return InjectedProperty.create(this, BindingKey(T::class, identifier))
 }

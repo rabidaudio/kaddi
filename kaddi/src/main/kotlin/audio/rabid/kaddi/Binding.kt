@@ -1,15 +1,15 @@
 package audio.rabid.kaddi
 
-sealed class Binding<T: Any> {
+sealed class Binding<T : Any> {
     abstract val key: BindingKey<*>
 
-    data class Basic<T: Any>(
+    data class Basic<T : Any>(
             override val key: BindingKey<T>,
             val overrides: Boolean,
             val singleton: Boolean,
             val intoSet: Boolean,
             val provider: Provider<T>
-    ): Binding<T>() {
+    ) : Binding<T>() {
 
         /**
          * Does this binding override other
@@ -20,7 +20,7 @@ sealed class Binding<T: Any> {
 //        }
     }
 
-    data class Set<T: Any>(override val key: BindingKey<T>): Binding<T>()
+    data class Set<T : Any>(override val key: BindingKey<T>) : Binding<T>()
 
     /**
      * Is this binding the same as another, for the purposes of detecting duplicate bindings

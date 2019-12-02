@@ -163,7 +163,7 @@ internal class ScopeImpl(
         }
     }
 
-    private fun <T: Any> Binding.Basic<T>.getInstance(): T {
+    private fun <T : Any> Binding.Basic<T>.getInstance(): T {
         if (!singleton) return provider.get()
         synchronized(Kaddi) {
             singletons[this]?.let { return it as T }
@@ -181,7 +181,7 @@ internal class ScopeImpl(
     }
 
     override fun contains(key: BindingKey<*>): Boolean {
-        return bindingTable.containsKey(key)
+        return bindingTable.containsKey(key) || parentScope?.contains(key) ?: false
     }
 
     override fun inject(receiver: Any) {

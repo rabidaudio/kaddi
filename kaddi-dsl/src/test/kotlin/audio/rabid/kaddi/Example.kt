@@ -84,6 +84,8 @@ object Example {
 
     val Activity1Module = module("Activity1") {
 
+        require<IDatabase>()
+        require<String>("AppName")
         bind<Activity1ViewModel>().withSingleton {
             Activity1ViewModel(
                     database = instance(),
@@ -110,6 +112,7 @@ object Example {
 
     val FragmentModule = module("Fragment") {
 
+        require<Logger>()
         bind<FragmentViewModel>().withSingleton {
             FragmentViewModel(logger = instance())
         }
@@ -119,6 +122,8 @@ object Example {
 
     val Activity2Module = module("Activity2") {
 
+        require<Logger>()
+        require<IDatabase>()
         bind<Activity2ViewModel>().withSingleton {
             Activity2ViewModel(
                     logger = instance(),
