@@ -40,7 +40,7 @@ class InjectedProperty<T: Any> private constructor(private val bindingKey: Bindi
     }
 
     internal fun injectValue(scope: Scope) {
-        value = scope.get(bindingKey)
+        value = scope.getInstance(bindingKey)
     }
 }
 

@@ -11,6 +11,10 @@ object Kaddi {
                 rootScope.addModule(module as KaddiModule)
             }
         }
+
+        operator fun plusAssign(module: Module) {
+            addModules(module)
+        }
     }
 
     fun getScope(identifier: Any): Scope {

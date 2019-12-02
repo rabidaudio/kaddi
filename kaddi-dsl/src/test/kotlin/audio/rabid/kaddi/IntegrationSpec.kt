@@ -1,5 +1,6 @@
 package audio.rabid.kaddi
 
+import audio.rabid.kaddi.Example.ALoggerEndpoint
 import audio.rabid.kaddi.Example.Activity1
 import audio.rabid.kaddi.Example.Activity1ViewModel
 import audio.rabid.kaddi.Example.Activity2
@@ -11,6 +12,7 @@ import audio.rabid.kaddi.Example.Fragment
 import audio.rabid.kaddi.Example.FragmentViewModel
 import audio.rabid.kaddi.Example.IDatabase
 import audio.rabid.kaddi.Example.Logger
+import audio.rabid.kaddi.Example.LoggerEndpoint
 import audio.rabid.kaddi.dsl.bind
 import audio.rabid.kaddi.dsl.module
 import audio.rabid.kaddi.dsl.toInstance
@@ -33,21 +35,28 @@ class IntegrationSpec : Spek({
                         bind<Int>(0).toInstance(0)
                     }
             )
-            expect(Kaddi.RootScope.get<Int>(0)).to.equal(0)
-            val logger1 = Kaddi.RootScope.get<Logger>()
+            expect(Kaddi.RootScope.getInstance<Int>(0)).to.equal(0)
+            val logger1 = Kaddi.RootScope.getInstance<Logger>()
             expect(logger1).to.be.an.instanceof(Logger::class.java)
-            val logger2 = Kaddi.RootScope.get<Logger>()
+            val logger2 = Kaddi.RootScope.getInstance<Logger>()
             expect(logger2).to.be.an.instanceof(Logger::class.java)
             expect(logger2).not.to.equal(logger1)
-            val database1 = Kaddi.RootScope.get<IDatabase>()
+            val database1 = Kaddi.RootScope.getInstance<IDatabase>()
             expect(database1).to.be.an.instanceof(Database::class.java)
-            val database2 = Kaddi.RootScope.get<IDatabase>()
+            val database2 = Kaddi.RootScope.getInstance<IDatabase>()
             expect(database2).to.be.an.instanceof(Database::class.java)
             expect(database2).to.equal(database1)
 
+            val loggerEndpoints = Kaddi.RootScope.getSetInstance<LoggerEndpoint>()
+            expect(loggerEndpoints.size).to.equal(1)
+            expect(loggerEndpoints.first()).to.be.an.instanceof(ALoggerEndpoint::class.java)
+            // Because the set binding entry for ALoggerEndpoint is not a singleton, Logger should have gotten
+            // a different set than we just did
+            expect(loggerEndpoints.first()).not.to.equal(logger1.endpoints.first())
+
             Kaddi.RootScope.addModules(module("Inline2") { bind<String>("foo").toInstance("bar") })
-            expect(Kaddi.RootScope.get<String>("foo")).to.equal("bar")
-            expect(Kaddi.RootScope.get<Int>(0)).to.equal(0)
+            expect(Kaddi.RootScope.getInstance<String>("foo")).to.equal("bar")
+            expect(Kaddi.RootScope.getInstance<Int>(0)).to.equal(0)
         }
     }
 
@@ -62,10 +71,10 @@ class IntegrationSpec : Spek({
 
             application.onApplicationCreate()
             val appScope = Kaddi.getScope(application)
-            expect(appScope.get<Logger>()).to.be.an.instanceof(Logger::class.java)
-            expect(appScope.get<String>("AppName")).to.equal("MyApp")
-            expectToThrow<IllegalStateException> { appScope.get<Activity1ViewModel>() }
-            expectToThrow<IllegalStateException> { Kaddi.RootScope.get<Logger>() }
+            expect(appScope.getInstance<Logger>()).to.be.an.instanceof(Logger::class.java)
+            expect(appScope.getInstance<String>("AppName")).to.equal("MyApp")
+            expectToThrow<IllegalStateException> { appScope.getInstance<Activity1ViewModel>() }
+            expectToThrow<IllegalStateException> { Kaddi.RootScope.getInstance<Logger>() }
 
             activity1.onCreate()
 
@@ -73,15 +82,15 @@ class IntegrationSpec : Spek({
             expect(activity1.viewModel).to.be.an.instanceof(Activity1ViewModel::class.java)
             expect(activity1.viewModel.appName).to.equal("MyApp")
             expect(activity1.viewModel.database).to.be.an.instanceof(Database::class.java)
-            expect(activity1.viewModel.database).to.satisfy { it === appScope.get<IDatabase>() }
+            expect(activity1.viewModel.database).to.satisfy { it === appScope.getInstance<IDatabase>() }
 
             fragment1.onAttach(activity1)
             expect(fragment1.viewModel).to.be.an.instanceof(FragmentViewModel::class.java)
-            expect(Kaddi.getScope(fragment1).get<Activity1ViewModel>()).to.satisfy { it === activity1.viewModel }
+            expect(Kaddi.getScope(fragment1).getInstance<Activity1ViewModel>()).to.satisfy { it === activity1.viewModel }
             expectToThrow<IllegalStateException> {
-                Kaddi.getScope(activity1).get<FragmentViewModel>()
+                Kaddi.getScope(activity1).getInstance<FragmentViewModel>()
             }
-            expect(Kaddi.getScope(fragment1).get<FragmentViewModel>()).to.equal(fragment1.viewModel)
+            expect(Kaddi.getScope(fragment1).getInstance<FragmentViewModel>()).to.equal(fragment1.viewModel)
 
             activity2.onCreate()
             fragment2.onAttach(activity2)
@@ -94,7 +103,7 @@ class IntegrationSpec : Spek({
             fragment1.onDetach()
 
             expectToThrow<IllegalStateException> { Kaddi.getScope(fragment1) }
-            expect(Kaddi.getScope(activity1).get<Activity1ViewModel>()).to.equal(activity1.viewModel)
+            expect(Kaddi.getScope(activity1).getInstance<Activity1ViewModel>()).to.equal(activity1.viewModel)
 
             fragment2.onDetach()
 
@@ -103,7 +112,7 @@ class IntegrationSpec : Spek({
 
             expectToThrow<IllegalStateException> { Kaddi.getScope(fragment2) }
 
-            val database = appScope.get<IDatabase>() as Database
+            val database = appScope.getInstance<IDatabase>() as Database
             expect(database.isClosed).to.be.`false`
             Kaddi.getScope(application).close()
             expect(database.isClosed).to.be.`true`

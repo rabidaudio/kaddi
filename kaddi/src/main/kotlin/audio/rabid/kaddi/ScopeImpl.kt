@@ -1,52 +1,113 @@
 package audio.rabid.kaddi
 
+// This is the core logic. Needs to handle:
+// singletons
+// set bindings
+// overrides
+// searching up the module tree
+//  all in a way that doesn't cause you to pull your hair out
+
+// Basic binding:
+//  if this or any parent defines the binding already, error
+//  search this module, followed by each parent module until the binding is found, or throw if not found
+//  call provider
+// Singleton binding:
+//  if this or any parent defines the binding already, error
+//  search this module, followed by each parent module until the binding is found, or throw if not found
+//  return cached value or call provider and cache
+// Override:
+//   overrides are only allowed if both the original binding and override are at the same scope
+//   if this scope does not have the original binding, error
+//   if the original binding is in a higher scope, error
+//   if the binding is a set, error
+//   match overridden binding, but keep original binding in case we support accessing the original in the future
+//   same logic for basic/singletons
+//   what happens when you override a set binding?
+// Set:
+//   set elements are only allowed to be added to the scope the set binding was defined (like overrides)
+//   if the set container is not declared, error
+//   if the set container is declared in a higher scope, error
 internal class ScopeImpl(
         private val key: Any,
         private val parentScope: ScopeImpl?
 ) : Scope {
     // the modules that were added in this scope (they were not already added in a parent scope)
     private val modules = mutableListOf<KaddiModule>()
-    private val singletons = mutableMapOf<BindingKey<*>, Any>()
 
-    // TODO this lookup could be cached
-    private fun <T : Any> findBinding(bindingKey: BindingKey<T>): Binding<T>? {
-        synchronized(Kaddi) {
-            return findLocalBinding(bindingKey) ?: parentScope?.findBinding(bindingKey)
-        }
-    }
+    // two versions of the same binding object can exist if they are both inSet
 
-    private fun <T : Any> findLocalBinding(bindingKey: BindingKey<T>): Binding<T>? {
-        synchronized(Kaddi) {
-            for (module in modules) {
-                for (binding in module.getBindings()) {
-                    @Suppress("UNCHECKED_CAST")
-                    if (binding.key == bindingKey) return binding as Binding<T>
+    // all bindings defined in the scope
+    private val allBindings = mutableListOf<Binding<*>>()
+    // a mapping of binding keys to the binding to use to resolve it
+    private val bindingTable = mutableMapOf<BindingKey<*>, Binding<*>>()
+    // a mapping of set binding definitions to the bindings supplying the elements
+    private val setBindings = mutableMapOf<BindingKey<*>, MutableList<Binding.Basic<*>>>()
+    // a mapping of a singleton binding to it's cached value
+    private val singletons = mutableMapOf<Binding.Basic<*>, Any>()
+
+    private fun addBinding(binding: Binding<*>) {
+        when (binding) {
+            is Binding.Basic -> {
+                check(!(binding.intoSet && binding.overrides)) {
+                    "Binding for ${binding.key} cannot override into a set"
+                }
+                when {
+                    binding.intoSet -> {
+                        // expect set binding defined here
+                        check(!parentContainsSetBindingFor(binding.key)) {
+                            "cannot add binding for ${binding.key} to set binding of parent scope"
+                        }
+                        check(localContainsSetBindingFor(binding.key)) {
+                            "$this does not contain set binding for ${binding.key}"
+                        }
+                        // at set binding element binding
+                        setBindings[binding.key]!!.add(binding)
+                    }
+                    binding.overrides -> {
+                        // parent should not contain original binding
+                        check(!parentContainsSetBindingFor(binding.key)) {
+                            "Binding for ${binding.key} in scope $this cannot override a binding that was " +
+                                    "defined in a higher scope"
+                        }
+                        // current scope should contain original binding
+                        check(allBindings.any { it.key == binding.key && it is Binding.Basic && !it.overrides }) {
+                            "Binding ${binding.key} marked as override but does not override an existing binding."
+                        }
+                        // replace table entry
+                        bindingTable[binding.key] = binding
+                    }
+                    else -> {
+                        check(!localContainsSetBindingFor(binding.key)) {
+                            """Duplicate binding ${binding.key} found in scope $this. If you are trying to override an
+                                    |existing binding, set override = true on the binding (and make sure the
+                                    |module supports overrides)""".trimMargin()
+                        }
+                        check(!parentContainsSetBindingFor(binding.key)) {
+                            """Duplicate binding ${binding.key} found in parent scope of $this. If you are trying to
+                                    |override an  existing binding, set override = true on the binding (and make sure the
+                                    |module supports overrides)""".trimMargin()
+                        }
+                        // add table entry
+                        bindingTable[binding.key] = binding
+                    }
                 }
             }
-            return null
-        }
-    }
-
-    private fun verifyBinding(binding: Binding<*>, allowOverride: Boolean) {
-        synchronized(Kaddi) {
-            val existingBinding = findBinding(binding.key)
-            if (existingBinding != null) {
-                check(binding.overrides) {
-                    """Duplicate binding ${binding.key} found. If you are trying to override an
-                        |existing binding, set override = true on the binding (and make sure the
-                        |module supports overrides)""".trimMargin()
+            is Binding.Set -> {
+                check(!localContainsSetBindingFor(binding.key)) {
+                    """Duplicate binding ${binding.key} found in scope $this. If you are trying to override an
+                            |existing binding, set override = true on the binding (and make sure the
+                            |module supports overrides)""".trimMargin()
                 }
-                check(allowOverride) {
-                    """Binding ${binding.key} tried to override an existing binding but the module
-                        |does not allow overrides.""".trimMargin()
+                check(!parentContainsSetBindingFor(binding.key)) {
+                    """Duplicate binding ${binding.key} found in parent scope of $this. If you are trying to
+                            |override an  existing binding, set override = true on the binding (and make sure the
+                            |module supports overrides)""".trimMargin()
                 }
-            } else {
-                check(!binding.overrides) {
-                    """Binding ${binding.key} marked as override but does not override an existing
-                        |binding.""".trimMargin()
-                }
+                bindingTable[binding.key] = binding
+                setBindings[binding.key] = mutableListOf()
             }
         }
+        allBindings.add(binding)
     }
 
     private fun moduleAlreadyAvailable(module: Module): Boolean {
@@ -60,46 +121,67 @@ internal class ScopeImpl(
         synchronized(Kaddi) {
             val moduleToAdd = module.copy()
             if (moduleAlreadyAvailable(moduleToAdd)) return
-            for (binding in moduleToAdd.getBindings()) {
-                verifyBinding(binding, moduleToAdd.allowOverrides)
-            }
             for (importedModule in moduleToAdd.getImportedModules()) {
                 addModule(importedModule)
             }
-            modules.add(moduleToAdd).also {
-                moduleToAdd.onAttachedToScope(this)
+            for (binding in moduleToAdd.getBindings()) {
+                addBinding(binding)
+            }
+            modules.add(moduleToAdd)
+            moduleToAdd.onAttachedToScope(this)
+        }
+    }
+
+    override fun createChildScope(qualifier: Any, vararg modules: Module): Scope {
+        synchronized(Kaddi) {
+            check(!Kaddi.scopes.contains(qualifier)) { "Scope for key $qualifier already exists" }
+            return ScopeImpl(qualifier, this).apply {
+                for (module in modules) {
+                    addModule(module as KaddiModule)
+                }
+            }.also { Kaddi.scopes[qualifier] = it }
+        }
+    }
+
+    override fun <T : Any> getInstance(key: BindingKey<T>): T {
+        synchronized(Kaddi) {
+
+            val localBinding = bindingTable[key]
+                    ?: return parentScope?.getInstance(key)
+                            ?: throw IllegalStateException("$key not found in $this or any parent scope")
+
+            return when (localBinding) {
+                is Binding.Set -> {
+                    val set = mutableSetOf<T>()
+                    for (elementBinding in setBindings[localBinding.key]!!) {
+                        set.add(elementBinding.getInstance() as T)
+                    }
+                    return set as T
+                }
+                is Binding.Basic -> localBinding.getInstance() as T
             }
         }
     }
 
-    override fun createChildScope(identifier: Any, vararg modules: Module): Scope {
+    private fun <T: Any> Binding.Basic<T>.getInstance(): T {
+        if (!singleton) return provider.get()
         synchronized(Kaddi) {
-            check(!Kaddi.scopes.contains(identifier)) { "Scope for key $identifier already exists" }
-            return ScopeImpl(identifier, this).apply {
-                for (module in modules) {
-                    addModule(module as KaddiModule)
-                }
-            }.also { Kaddi.scopes[identifier] = it }
+            singletons[this]?.let { return it as T }
+            return provider.get().also { singletons[this] = it }
         }
     }
 
-    override fun <T : Any> get(key: BindingKey<T>): T {
-        synchronized(Kaddi) {
-            return getFromLocalBinding(key)
-                    ?: parentScope?.get(key)
-                    ?: throw IllegalStateException("$key not found in $this")
-        }
+    private fun localContainsSetBindingFor(bindingKey: BindingKey<*>): Boolean {
+        return allBindings.any { it is Binding.Set && it.key == bindingKey }
     }
 
-    // TODO need to deal with overrides. the code will get even more complicated so a redesign is probably in order
-    private fun <T : Any> getFromLocalBinding(key: BindingKey<T>): T? {
-        synchronized(Kaddi) {
-            val binding = findLocalBinding(key) ?: return null
-            if (!binding.singleton) return binding.provider.get()
-            @Suppress("UNCHECKED_CAST")
-            singletons[binding.key]?.let { return it as T }
-            return binding.provider.get().also { singletons[binding.key] = it }
-        }
+    private fun parentContainsSetBindingFor(bindingKey: BindingKey<*>): Boolean {
+        if (parentScope == null) return false
+        return parentScope.localContainsSetBindingFor(bindingKey) || parentScope.parentContainsSetBindingFor(bindingKey)
+    }
+
+    override fun contains(key: BindingKey<*>): Boolean {
+        return bindingTable.containsKey(key)
     }
 
     override fun inject(receiver: Any) {
@@ -112,6 +194,9 @@ internal class ScopeImpl(
                 if (singleton is ScopeClosable) singleton.onScopeClose()
             }
             singletons.clear()
+            setBindings.clear()
+            bindingTable.clear()
+            allBindings.clear()
             modules.clear()
             Kaddi.scopes.remove(key)
         }

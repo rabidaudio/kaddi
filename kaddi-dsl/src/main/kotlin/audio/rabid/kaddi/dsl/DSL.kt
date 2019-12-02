@@ -1,25 +1,45 @@
 package audio.rabid.kaddi.dsl
 
-import audio.rabid.kaddi.BindingKey
-import audio.rabid.kaddi.JustProvider
-import audio.rabid.kaddi.Module
-import audio.rabid.kaddi.Provider
+import audio.rabid.kaddi.*
+import audio.rabid.kaddi.dsl.BindingType.*
 
 interface BindingBlock {
     companion object {
         // this companion object trick is a way to still supply a public method that does the work without cluttering
         // the methods of the interface, leaving only the inline versions of the methods suggested by the IDE
-        fun <T : Any> bind(block: BindingBlock, bindingKey: BindingKey<T>, overrides: Boolean): PartialBindingBlock<T> =
-                BindingBuilder(bindingKey, overrides, block as DSLModule)
+        fun <T : Any> bind(block: BindingBlock, bindingKey: BindingKey<T>, overrides: Boolean, type: BindingType): PartialBindingBlock<T> =
+                BindingBuilder(bindingKey, overrides, type, block as DSLModule)
+
+        fun <T: Any> createSetBinding(block: BindingBlock, key: BindingKey<T>) {
+            (block as DSLModule).addBinding(Binding.Set(key))
+        }
+
+        fun <T: Any> require(block: BindingBlock, bindingKey: BindingKey<T>) {
+            (block as DSLModule).addRequiredBinding(bindingKey)
+        }
     }
 
-    fun require(otherModule: Module)
+    fun import(otherModule: Module)
 }
 
 inline fun <reified T : Any> BindingBlock.bind(
-        identifier: Any = Unit,
+        qualifier: Any = Unit,
         overrides: Boolean = false
-): PartialBindingBlock<T> = BindingBlock.bind(this, BindingKey(T::class, identifier), overrides)
+): PartialBindingBlock<T> = BindingBlock.bind(this, BindingKey(T::class, qualifier), overrides, BASIC)
+
+inline fun <reified T: Any> BindingBlock.declareSetBinding(
+        qualifier: Any = Unit
+) {
+    BindingBlock.createSetBinding(this, BindingKey(T::class, qualifier, set = true))
+}
+
+inline fun <reified T: Any> BindingBlock.bindIntoSet(
+        qualifier: Any = Unit
+) = BindingBlock.bind(this, BindingKey(T::class, qualifier, set = true), false, INTO_SET)
+
+inline fun <reified T : Any> BindingBlock.require(qualifier: Any = Unit) {
+    BindingBlock.require(this, BindingKey(T::class, qualifier))
+}
 
 interface PartialBindingBlock<T : Any> {
     companion object {
@@ -49,14 +69,17 @@ inline fun <T : Any> PartialBindingBlock<T>.withSingleton(noinline block: Provid
 
 interface ProviderBlock {
     companion object {
-        fun <T : Any> get(block: ProviderBlock, bindingKey: BindingKey<T>): T =
-                (block as DSLModule).boundScope.get(bindingKey)
+        fun <T : Any> getInstance(block: ProviderBlock, bindingKey: BindingKey<T>): T =
+                (block as DSLModule).boundScope.getInstance(bindingKey)
     }
 }
 
-inline fun <reified T : Any> ProviderBlock.instance(identifier: Any = Unit): T =
-        ProviderBlock.get(this, BindingKey(T::class, identifier))
+inline fun <reified T : Any> ProviderBlock.instance(qualifier: Any = Unit): T =
+        ProviderBlock.getInstance(this, BindingKey(T::class, qualifier))
 
-fun module(name: String, allowOverrides: Boolean = false, block: BindingBlock.() -> Unit): Module {
-    return DSLModule(name, allowOverrides).also(block)
+inline fun <reified T : Any> ProviderBlock.setInstance(qualifier: Any = Unit): Set<T> =
+        ProviderBlock.getInstance(this, BindingKey(T::class, qualifier, set = true)) as Set<T>
+
+fun module(name: String, block: BindingBlock.() -> Unit): Module {
+    return DSLModule(name).also(block)
 }

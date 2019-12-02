@@ -4,18 +4,25 @@ import audio.rabid.kaddi.dsl.*
 
 object Example {
 
-    class Logger {
+    interface LoggerEndpoint {
+        fun handleLog(message: String)
+    }
+
+    class Logger(val endpoints: List<LoggerEndpoint>) {
         fun log(message: String) {
-            // implementation
+            for (endpoint in endpoints) {
+                endpoint.handleLog(message)
+            }
         }
     }
 
-    class LoggerProvider : Provider<Logger> {
-        override fun get(): Logger = Logger()
-    }
-
     val LoggingModule = module("Logging") {
-        bind<Logger>().with(LoggerProvider())
+
+        declareSetBinding<LoggerEndpoint>()
+
+        bind<Logger>().with {
+            Logger(endpoints = setInstance<LoggerEndpoint>().toList())
+        }
     }
 
     interface IDatabase
@@ -28,9 +35,21 @@ object Example {
         }
     }
 
+    class DatabaseProvider : Provider<IDatabase> {
+        override fun get(): IDatabase = Database()
+    }
+
+    class ALoggerEndpoint : LoggerEndpoint {
+        override fun handleLog(message: String) {
+            // handle
+        }
+    }
+
     val DataModule = module("Data") {
-        require(LoggingModule)
-        bind<IDatabase>().withSingleton { Database() }
+        import(LoggingModule)
+        bind<IDatabase>().withSingleton(DatabaseProvider())
+
+        bindIntoSet<LoggerEndpoint>().with { ALoggerEndpoint() }
     }
 
     class Application {
@@ -40,8 +59,8 @@ object Example {
     }
 
     val AppModule = module("App") {
-        require(LoggingModule)
-        require(DataModule)
+        import(LoggingModule)
+        import(DataModule)
         bind<String>("AppName").toInstance("MyApp")
     }
 
