@@ -33,6 +33,8 @@ internal class ScopeImpl(
 ) : Scope {
     // the modules that were added in this scope (they were not already added in a parent scope)
     private val modules = mutableListOf<KaddiModule>()
+    // temporarily store modules added in a group so the callbacks can be called after all the modules have been added
+    private val addedModules = mutableSetOf<KaddiModule>()
 
     // two versions of the same binding object can exist if they are both inSet
 
@@ -117,19 +119,28 @@ internal class ScopeImpl(
         }
     }
 
-    internal fun addModule(module: KaddiModule) {
+    internal fun addModules(modules: Array<out Module>) {
+        synchronized(Kaddi) {
+            addedModules.clear()
+            for (module in modules) {
+                addModule(module as KaddiModule)
+            }
+            addedModules.forEach { it.onAttachedToScope(this) }
+            addedModules.clear()
+        }
+    }
+
+    private fun addModule(module: KaddiModule) {
         synchronized(Kaddi) {
             if (moduleAlreadyAvailable(module)) return
             modules.add(module)
+            addedModules.add(module)
             for (command in module.getCommands()) {
                 when (command) {
                     is Command.AddBinding -> addBinding(command.binding.assignDependencyProvider(this))
                     is Command.ImportModule -> addModule(command.module)
                 }
             }
-            // TODO should we wait to call onAttached callbacks on dependant modules until after all the child modules
-            // have been added?
-            module.onAttachedToScope(this)
         }
     }
 
@@ -137,9 +148,7 @@ internal class ScopeImpl(
         synchronized(Kaddi) {
             check(!Kaddi.scopes.contains(qualifier)) { "Scope for key $qualifier already exists" }
             return ScopeImpl(qualifier, this).apply {
-                for (module in modules) {
-                    addModule(module as KaddiModule)
-                }
+                addModules(modules)
             }.also { Kaddi.scopes[qualifier] = it }
         }
     }

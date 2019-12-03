@@ -10,9 +10,7 @@ object Kaddi {
         internal val implementation: ScopeImpl get() = rootScope
 
         fun addModules(vararg modules: Module) {
-            for (module in modules) {
-                rootScope.addModule(module as KaddiModule)
-            }
+            rootScope.addModules(modules)
         }
 
         operator fun plusAssign(module: Module) {
