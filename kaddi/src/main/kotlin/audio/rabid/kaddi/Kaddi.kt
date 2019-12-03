@@ -6,6 +6,9 @@ object Kaddi {
     private val rootScope = ScopeImpl(Kaddi, null)
 
     object RootScope : Scope by rootScope {
+
+        internal val implementation: ScopeImpl get() = rootScope
+
         fun addModules(vararg modules: Module) {
             for (module in modules) {
                 rootScope.addModule(module as KaddiModule)

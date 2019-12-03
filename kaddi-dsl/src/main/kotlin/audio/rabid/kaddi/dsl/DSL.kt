@@ -2,7 +2,7 @@ package audio.rabid.kaddi.dsl
 
 import audio.rabid.kaddi.*
 
-typealias OnReadyCallback = ProviderBlock.() -> Unit
+typealias OnAttachedToScope = DependencyProvider.() -> Unit
 
 interface BindingBlock {
     companion object {
@@ -24,9 +24,15 @@ interface BindingBlock {
         }
     }
 
+    /**
+     * Declare that this module depends on [otherModule].
+     */
     fun import(otherModule: Module)
 
-    fun onReady(callback: OnReadyCallback)
+    /**
+     * Run code immediately after the module has been added to a scope
+     */
+    fun onAttachedToScope(callback: OnAttachedToScope)
 }
 
 inline fun <reified T : Any> BindingBlock.bind(
@@ -53,11 +59,6 @@ inline fun <reified T : Any> BindingBlock.require(qualifier: Any = Unit) {
 }
 
 interface PartialBindingBlock<T : Any> {
-    companion object {
-        fun <T : Any> createProvider(block: PartialBindingBlock<T>, lambda: ProviderBlock.() -> T): Provider<T> =
-                LambdaProvider((block as BindingBuilder).module, lambda)
-    }
-
     fun with(provider: Provider<T>)
 
     fun withSingleton(provider: Provider<T>)
@@ -69,34 +70,14 @@ inline fun <T : Any> PartialBindingBlock<T>.toInstance(value: T) {
 }
 
 @Suppress("NOTHING_TO_INLINE")
-inline fun <T : Any> PartialBindingBlock<T>.with(noinline block: ProviderBlock.() -> T) {
-    with(PartialBindingBlock.createProvider(this, block))
+inline fun <T : Any> PartialBindingBlock<T>.with(noinline block: DependencyProvider.() -> T) {
+    with(LambdaProvider(block))
 }
 
 @Suppress("NOTHING_TO_INLINE")
-inline fun <T : Any> PartialBindingBlock<T>.withSingleton(noinline block: ProviderBlock.() -> T) {
-    withSingleton(PartialBindingBlock.createProvider(this, block))
+inline fun <T : Any> PartialBindingBlock<T>.withSingleton(noinline block: DependencyProvider.() -> T) {
+    withSingleton(LambdaProvider(block))
 }
-
-interface ProviderBlock {
-
-    @Suppress("UNCHECKED_CAST")
-    companion object {
-        fun <T : Any> getInstance(block: ProviderBlock, bindingKey: BindingKey<T>): T {
-            return (block as DSLModule).boundScope.getInstance(bindingKey) as T
-        }
-
-        fun <T : Any> getSetInstance(block: ProviderBlock, bindingKey: BindingKey<T>): Set<T> {
-            return (block as DSLModule).boundScope.getInstance(bindingKey) as Set<T>
-        }
-    }
-}
-
-inline fun <reified T : Any> ProviderBlock.instance(qualifier: Any = Unit): T =
-        ProviderBlock.getInstance(this, BindingKey(T::class, qualifier))
-
-inline fun <reified T : Any> ProviderBlock.setInstance(qualifier: Any = Unit): Set<T> =
-        ProviderBlock.getSetInstance(this, BindingKey(T::class, qualifier, set = true))
 
 fun module(name: String, block: BindingBlock.() -> Unit): Module {
     return DSLModule(name).also(block)

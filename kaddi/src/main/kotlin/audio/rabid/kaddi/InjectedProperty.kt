@@ -40,7 +40,7 @@ class InjectedProperty<T : Any> private constructor(private val bindingKey: Bind
 
     @Suppress("UNCHECKED_CAST")
     internal fun injectValue(scope: Scope) {
-        value = scope.getInstance(bindingKey) as T
+        value = bindingKey.getInstanceFromScope(scope) as T
     }
 }
 

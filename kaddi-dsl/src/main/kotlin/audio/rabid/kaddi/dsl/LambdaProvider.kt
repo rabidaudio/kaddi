@@ -1,13 +1,12 @@
 package audio.rabid.kaddi.dsl
 
-import audio.rabid.kaddi.Provider
+import audio.rabid.kaddi.DependantInstanceProvider
+import audio.rabid.kaddi.DependencyProvider
 
-internal class LambdaProvider<T : Any>(
-        val providerBlock: ProviderBlock,
-        private val lambda: ProviderBlock.() -> T
-) : Provider<T> {
-    override fun get(): T = lambda.invoke(providerBlock)
+class LambdaProvider<T : Any>(
+        private val lambda: DependencyProvider.() -> T
+) : DependantInstanceProvider<T>() {
+    override fun get(dependencyProvider: DependencyProvider): T = lambda.invoke(dependencyProvider)
 
-    internal fun withNewBlock(newProviderBlock: ProviderBlock): LambdaProvider<T>
-            = LambdaProvider(newProviderBlock, lambda)
+    override fun copy(): DependantInstanceProvider<T> = LambdaProvider(lambda)
 }

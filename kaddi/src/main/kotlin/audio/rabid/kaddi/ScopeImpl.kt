@@ -120,15 +120,16 @@ internal class ScopeImpl(
     internal fun addModule(module: KaddiModule) {
         synchronized(Kaddi) {
             if (moduleAlreadyAvailable(module)) return
-            val moduleToAdd = module.copy()
-            modules.add(moduleToAdd)
-            for (command in moduleToAdd.getCommands()) {
+            modules.add(module)
+            for (command in module.getCommands()) {
                 when (command) {
-                    is Command.AddBinding -> addBinding(command.binding)
+                    is Command.AddBinding -> addBinding(command.binding.assignDependencyProvider(this))
                     is Command.ImportModule -> addModule(command.module)
                 }
             }
-            moduleToAdd.onAttachedToScope(this)
+            // TODO should we wait to call onAttached callbacks on dependant modules until after all the child modules
+            // have been added?
+            module.onAttachedToScope(this)
         }
     }
 
@@ -143,7 +144,7 @@ internal class ScopeImpl(
         }
     }
 
-    override fun getInstance(key: BindingKey<*>): Any {
+    internal fun getInstance(key: BindingKey<*>): Any {
         synchronized(Kaddi) {
             val localBinding = bindingTable[key]
                     ?: return parentScope?.getInstance(key)
