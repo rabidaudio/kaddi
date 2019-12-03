@@ -5,25 +5,34 @@ import audio.rabid.kaddi.*
 internal class DSLModule(
         override val name: String
 ) : KaddiModule, BindingBlock, ProviderBlock {
-    private val importedModules = mutableSetOf<KaddiModule>()
-    private val bindings = mutableListOf<Binding<*>>()
+
+    private val commands = mutableListOf<Command>()
+//    private val importedModules = mutableSetOf<KaddiModule>()
+//    private val bindings = mutableListOf<Binding<*>>()
     private val requiredBindings = mutableSetOf<BindingKey<*>>()
+    private val onReadyCallbacks = mutableListOf<OnReadyCallback>()
 
     internal lateinit var boundScope: Scope
 
-    override fun getBindings(): List<Binding<*>> = bindings
-    override fun getImportedModules(): Set<KaddiModule> = importedModules
+//    override fun getBindings(): List<Binding<*>> = bindings
+//    override fun getImportedModules(): Set<KaddiModule> = importedModules
+
+    override fun getCommands(): List<Command> = commands
 
     override fun import(otherModule: Module) {
-        importedModules.add(otherModule as KaddiModule)
+        commands.add(Command.ImportModule(otherModule as KaddiModule))
     }
 
     fun addBinding(binding: Binding<*>) {
-        bindings.add(binding)
+        commands.add(Command.AddBinding(binding))
     }
 
     fun addRequiredBinding(bindingKey: BindingKey<*>) {
         requiredBindings.add(bindingKey)
+    }
+
+    override fun onReady(callback: OnReadyCallback) {
+        onReadyCallbacks.add(callback)
     }
 
     override fun onAttachedToScope(scope: Scope) {
@@ -34,13 +43,25 @@ internal class DSLModule(
             }
         }
         boundScope = scope
+        for (callback in onReadyCallbacks) {
+            callback.invoke(this)
+        }
     }
 
-    override fun copy(): KaddiModule {
+    fun withPrependedBinding(binding: Binding<*>): DSLModule {
+        return copy().also { it.commands.add(0, Command.AddBinding(binding)) }
+    }
+
+    override fun copy(): DSLModule {
         return DSLModule(name).also { new ->
-            new.importedModules.addAll(importedModules)
+            for (command in commands) {
+                when (command) {
+                    is Command.AddBinding -> new.commands.add(Command.AddBinding(command.binding.copyForNewModule(new)))
+                    else -> new.commands.add(command)
+                }
+            }
             new.requiredBindings.addAll(requiredBindings)
-            new.bindings.addAll(bindings.map { it.copyForNewModule(new) })
+            new.onReadyCallbacks.addAll(onReadyCallbacks)
         }
     }
 

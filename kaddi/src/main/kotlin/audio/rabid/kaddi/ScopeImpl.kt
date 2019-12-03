@@ -119,15 +119,15 @@ internal class ScopeImpl(
 
     internal fun addModule(module: KaddiModule) {
         synchronized(Kaddi) {
+            if (moduleAlreadyAvailable(module)) return
             val moduleToAdd = module.copy()
-            if (moduleAlreadyAvailable(moduleToAdd)) return
-            for (importedModule in moduleToAdd.getImportedModules()) {
-                addModule(importedModule)
-            }
-            for (binding in moduleToAdd.getBindings()) {
-                addBinding(binding)
-            }
             modules.add(moduleToAdd)
+            for (command in moduleToAdd.getCommands()) {
+                when (command) {
+                    is Command.AddBinding -> addBinding(command.binding)
+                    is Command.ImportModule -> addModule(command.module)
+                }
+            }
             moduleToAdd.onAttachedToScope(this)
         }
     }
@@ -143,22 +143,21 @@ internal class ScopeImpl(
         }
     }
 
-    override fun <T : Any> getInstance(key: BindingKey<T>): T {
+    override fun getInstance(key: BindingKey<*>): Any {
         synchronized(Kaddi) {
-
             val localBinding = bindingTable[key]
                     ?: return parentScope?.getInstance(key)
                             ?: throw IllegalStateException("$key not found in $this or any parent scope")
 
             return when (localBinding) {
                 is Binding.Set -> {
-                    val set = mutableSetOf<T>()
+                    val set = mutableSetOf<Any>()
                     for (elementBinding in setBindings[localBinding.key]!!) {
-                        set.add(elementBinding.getInstance() as T)
+                        set.add(elementBinding.getInstance())
                     }
-                    return set as T
+                    return set
                 }
-                is Binding.Basic -> localBinding.getInstance() as T
+                is Binding.Basic -> localBinding.getInstance()
             }
         }
     }
@@ -166,6 +165,7 @@ internal class ScopeImpl(
     private fun <T : Any> Binding.Basic<T>.getInstance(): T {
         if (!singleton) return provider.get()
         synchronized(Kaddi) {
+            @Suppress("UNCHECKED_CAST")
             singletons[this]?.let { return it as T }
             return provider.get().also { singletons[this] = it }
         }

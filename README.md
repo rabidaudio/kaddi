@@ -33,7 +33,7 @@ Scope -
 - [x] overrides
 - [x] dsl
 - [x] scope closable
-- [ ] set bindings
+- [x] set bindings
 - [ ] thread safety performance
 - [ ] async dependencies?
 - [ ] eager dependencies?
