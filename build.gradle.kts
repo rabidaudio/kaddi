@@ -25,9 +25,7 @@ subprojects {
     apply {
         plugin("java-library")
         plugin("kotlin")
-        plugin("maven-publish")
         plugin("jacoco")
-        plugin("com.github.johnrengelman.shadow")
     }
 
     sourceSets.main.get().java.srcDirs("src/main/kotlin")
@@ -50,52 +48,60 @@ subprojects {
         }
     }
 
-    val sourcesJar by tasks.creating(Jar::class) {
-        dependsOn(tasks.classes)
-        archiveClassifier.set("sources")
-        from(sourceSets.main.get().allSource)
-    }
+    val publishableProjects = listOf("kaddi-dsl")
 
-    val javadocJar by tasks.creating(Jar::class) {
-        from(tasks.javadoc)
-        archiveClassifier.set("javadoc")
-    }
+    if (publishableProjects.contains(name)) {
+        apply {
+            plugin("maven-publish")
+            plugin("com.github.johnrengelman.shadow")
+        }
+        val sourcesJar by tasks.creating(Jar::class) {
+            dependsOn(tasks.classes)
+            archiveClassifier.set("sources")
+            from(sourceSets.main.get().allSource)
+        }
 
-    artifacts {
-        archives(sourcesJar)
-        archives(javadocJar)
-    }
+        val javadocJar by tasks.creating(Jar::class) {
+            from(tasks.javadoc)
+            archiveClassifier.set("javadoc")
+        }
 
-    publishing {
-        publications.create<MavenPublication>("kaddiPublication") {
-            from(components["java"])
-            artifact(sourcesJar)
-            artifact(javadocJar)
-            artifact(tasks.getByName("shadowJar"))
-            groupId = this@subprojects.group as? String
-            artifactId = this@subprojects.name
-            version = this@subprojects.version as? String
-            pom {
-                description.set("Simple scoping dependency injection for Kotlin")
-                name.set("kaddi")
-                url.set("https://github.com/rabidudio/kaddi")
-                licenses {
-                    license {
-                        name.set("The Apache Software License, Version 2.0")
-                        url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
-                        distribution.set("repo")
-                    }
-                }
-                developers {
-                    developer {
-                        id.set("Charles Julian Knight")
-                        name.set("Charles Julian Knight")
-                        email.set("charles@rabidaudio.com")
-                        url.set("https://twitter.com/charlesjuliank")
-                    }
-                }
-                scm {
+        artifacts {
+            archives(sourcesJar)
+            archives(javadocJar)
+        }
+
+        publishing {
+            publications.create<MavenPublication>("kaddiPublication") {
+                from(components["java"])
+                artifact(sourcesJar)
+                artifact(javadocJar)
+                artifact(tasks.getByName("shadowJar"))
+                groupId = this@subprojects.group as? String
+                artifactId = this@subprojects.name
+                version = this@subprojects.version as? String
+                pom {
+                    description.set("Simple scoping dependency injection for Kotlin")
+                    name.set("kaddi")
                     url.set("https://github.com/rabidudio/kaddi")
+                    licenses {
+                        license {
+                            name.set("The Apache Software License, Version 2.0")
+                            url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+                            distribution.set("repo")
+                        }
+                    }
+                    developers {
+                        developer {
+                            id.set("Charles Julian Knight")
+                            name.set("Charles Julian Knight")
+                            email.set("charles@rabidaudio.com")
+                            url.set("https://twitter.com/charlesjuliank")
+                        }
+                    }
+                    scm {
+                        url.set("https://github.com/rabidudio/kaddi")
+                    }
                 }
             }
         }
