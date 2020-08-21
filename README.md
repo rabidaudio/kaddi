@@ -35,9 +35,7 @@ Scope -
 - [x] scope closable
 - [x] set bindings
 - [ ] thread safety performance
-- [ ] async dependencies?
-- [ ] eager dependencies?
-- [ ] onReady? (when do these fire - on a new scope?)
+- [x] onReady? (when do these fire - on a new scope?)
 - docs
   - [ ] motivation
   - [ ] comparison
@@ -50,3 +48,6 @@ Scope -
   - [ ] cache binding lookups
   - [ ] scope annotations
   - [ ] scope-creation-time tree validation and scope validation?
+- future state
+  - [ ] async dependencies?
+  - [ ] eager dependencies?
